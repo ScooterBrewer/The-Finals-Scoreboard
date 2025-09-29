@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<title>The Finals — Moderator Scoreboard (Compact Hybrid Card)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  :root {
+    --bg:#0f1113; --panel:#171a1f; --muted:#8fa1b3; --line:rgba(255,255,255,.08); --ink:#e8eef5;
+    --btn:#2f8ef3; --ok:#2fbf6e; --warn:#ffb86b; --danger:#ff6b6b; --card:#14171b; --chip:#20252d;
+    --accent:#8ab8ff; --cost:#ffd2a8;
+    --teamA:#2563eb; --teamB:#ef4444;
+  }
+  html[data-theme="light"]{
+    --bg:#f6f8fb; --panel:#ffffff; --muted:#5c6b7a; --line:rgba(0,0,0,.08); --ink:#0e1726;
+    --btn:#2563eb; --ok:#16a34a; --warn:#f59e0b; --danger:#ef4444; --card:#f9fafb; --chip:#eef2f7;
+    --accent:#0ea5e9; --cost:#b45309;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(90deg,var(--panel),var(--chip));padding:10px 16px;border-bottom:1px solid var(--line)}
+  .header-inner{display:flex;gap:10px;align-items:center;justify-content:space-between;max-width:1500px;margin:0 auto}
+  .title{font-size:20px;font-weight:800}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{padding:8px 12px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-weight:600;background:var(--chip);color:var(--ink)}
+  .btn-primary{background:var(--btn);color:#fff;border-color:transparent}
+  .btn-success{background:var(--ok);color:#042;border-color:transparent}
+  .btn-warning{background:var(--warn);color:#2a1700;border-color:transparent}
+  .btn-danger{background:var(--danger);color:#fff;border-color:transparent}
+  .btn-compact{padding:6px 8px;font-size:13px}
+  .layout{display:flex;gap:16px;max-width:1500px;margin:0 auto;padding:14px}
+  .teams{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1}
+  @media (max-width:1200px){ .teams{grid-template-columns:1fr;} }
+  .team-card{background:var(--panel);border-radius:16px;flex:1;min-width:420px;box-shadow:0 6px 22px rgba(0,0,0,.15);border:1px solid var(--line);display:flex;flex-direction:column}
+  .team-header{background:var(--teamcolor,#333);color:#fff;padding:12px 16px;border-top-left-radius:16px;border-top-right-radius:16px;display:flex;justify-content:space-between;align-items:center}
+  .team-header h2{margin:0;font-size:18px}
+  .team-head-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .team-players{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:12px;padding:12px}
+  @media (max-width:600px){ .team-players{grid-template-columns:1fr;} }
+  .player-card{background:var(--card);padding:10px;border-radius:12px;border:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:8px}
+  .player-top{display:flex;justify-content:space-between;align-items:center}
+  .player-index{font-size:12px;color:var(--muted)}
+  .player-name{font-weight:800;cursor:pointer;font-size:15px}
+  .weapon-box{text-align:center}
+  .weapon-box img{width:48px;height:48px;object-fit:contain;background:#101418;border-radius:10px;border:1px solid var(--line);margin-bottom:6px}
+  .weapon-name{font-weight:700;font-size:14px}
+  .badges{display:flex;gap:6px;justify-content:center;margin-top:4px;flex-wrap:wrap}
+  .badge{padding:2px 6px;font-size:11px;border-radius:6px;color:#fff}
+  .badge.dead{background:var(--danger)}
+  .badge.bench{background:#6b7280}
+  .cash-box{text-align:center}
+  .cash-value{font-size:18px;font-weight:800;cursor:pointer;display:block}
+  .quick-adjust{display:flex;gap:6px;justify-content:center;margin-top:6px}
+  .actions{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+  .actions .btn{width:100%}
+  .team-footer{padding:12px;text-align:center;border-top:1px solid var(--line)}
+  .team-footer .total{font-weight:700;font-size:16px}
+  /* Right sidebar */
+  .right{flex:0 0 320px;display:flex;flex-direction:column;gap:12px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+  .panel h3{margin:0 0 8px}
+  .hidden{display:none}
+  .log{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+  .log-entry{border-bottom:1px dashed var(--line);padding:4px 0}
+  /* Modal base */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(2,6,12,.7);z-index:1000;align-items:center;justify-content:center;padding:20px}
+  .modal{background:var(--panel);border-radius:14px;padding:18px;max-width:1100px;width:100%;max-height:92vh;overflow:auto;color:var(--ink);border:1px solid var(--line);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+  .modal h3{margin:0 0 10px}
+  /* Buy grid */
+  .grid-weapons{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
+  .weapon-card{background:var(--card);padding:12px;border-radius:12px;text-align:center;cursor:pointer;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;transition:transform .08s ease}
+  .weapon-card:hover{transform:translateY(-2px)}
+  .weapon-card img{width:100%;max-width:120px;height:120px;object-fit:contain;margin-bottom:8px;background:#0c0c0c;border-radius:8px;border:1px solid var(--line)}
+  .weapon-name{font-weight:700;margin-top:4px}
+  .weapon-cost{margin-top:2px;font-weight:800;color:var(--cost)}
+  .buy-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}
+  .input{padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:220px}
+  .switch{display:inline-flex;align-items:center;gap:8px}
+  .switch input{accent-color:var(--btn)}
+  /* Settings */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .card h4{margin:0 0 10px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .kv .input{width:100%}
+  .weps-editor{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+  .wep-row{display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--card);padding:8px;border-radius:10px}
+  .wep-row .label{flex:1}
+  .settings-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+  .theme-toggle{display:flex;align-items:center;gap:8px}
+</style>
+
+<!-- Firebase (module) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyASA4ZVlC_HxKDOH5nm3n5doFguxvlYSIQ",
+    authDomain: "the-finals-scoreboard.firebaseapp.com",
+    projectId: "the-finals-scoreboard",
+    storageBucket: "the-finals-scoreboard.appspot.com",
+    messagingSenderId: "733685501021",
+    appId: "1:733685501021:web:df9d1d63b5106a099811b4",
+    measurementId: "G-C02JSSKWN5"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.__fs = {
+    setPlayer: async (name, data) => {
+      try { await setDoc(doc(db, "players", String(name)), data, { merge: true }); }
+      catch(e){ console.error("Firestore setPlayer error", e); }
+    },
+    subscribe: (name, cb) => {
+      try { return onSnapshot(doc(db, "players", String(name)), (snap) => cb(snap.exists() ? snap.data() : null)); }
+      catch(e){ console.error("Firestore subscribe error", e); return () => {}; }
+    }
+  };
+</script>
+
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="title">THE FINALS — Moderator Scoreboard</div>
+    <div class="toolbar">
+      <span class="theme-toggle"><input type="checkbox" id="themeToggle"/><label for="themeToggle" class="muted">Light mode</label></span>
+      <button class="btn" id="toggleTimer">⏱ Show Timer</button>
+      <button class="btn" id="toggleMass">⚡ Show Mass Adjust</button>
+      <button class="btn" id="toggleLog">📜 Show Event Log</button>
+      <button class="btn" id="openSettingsBtn">⚙️ Settings</button>
+      <button class="btn btn-primary" id="endRoundBtn">🏁 End Round</button>
+      <button class="btn btn-warning" id="resetCashBtn">🔄 Reset Cash</button>
+      <button class="btn" id="clearWeaponsBtn">🗑️ Clear Weapons</button>
+      <button class="btn btn-danger" id="revertBtn">↩️ Revert</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="teams" id="teamsArea"></div>
+
+  <aside class="right">
+    <div class="panel hidden" id="timerPanel">
+      <h3>Round Timer</h3>
+      <div><span class="btn" id="timerClock" style="font-weight:800">00:00</span></div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" id="timerStart">Start</button>
+        <button class="btn" id="timerPause">Pause</button>
+        <button class="btn" id="timerReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="panel hidden" id="massPanel">
+      <h3>Mass Adjust</h3>
+      <input id="massAmount" class="input" type="number" value="100" style="width:100%"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
+        <button class="btn btn-success" id="addAllBtn">+ All</button>
+        <button class="btn btn-danger" id="subAllBtn">- All</button>
+        <button class="btn" id="addTeamABtn">+ Team A</button>
+        <button class="btn" id="subTeamABtn">- Team A</button>
+        <button class="btn" id="addTeamBBtn">+ Team B</button>
+        <button class="btn" id="subTeamBBtn">- Team B</button>
+      </div>
+      <button class="btn btn-warning" id="resetMatchBtn" style="margin-top:6px">Reset Match</button>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+        <button class="btn" id="exportJsonBtn">Export JSON</button>
+        <button class="btn" id="exportCsvBtn">Export CSV</button>
+      </div>
+      <h4 style="margin:10px 0 6px">Save Slots</h4>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input id="slotName" class="input" placeholder="Slot name" style="flex:1;min-width:120px"/>
+        <button class="btn btn-primary" id="saveSlotBtn">Save</button>
+      </div>
+      <div id="slotList" class="log" style="margin-top:8px"></div>
+    </div>
+
+    <div class="panel hidden" id="logPanel">
+      <h3>Event Log</h3>
+      <div id="log" class="log"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Shop modal -->
+<div class="overlay" id="shopModal">
+  <div class="modal">
+    <h3>Buy weapon</h3>
+    <div id="shopForPlayerInfo" class="muted" style="margin-bottom:8px"></div>
+    <div class="buy-toolbar">
+      <input id="searchInput" class="input" placeholder="Search weapons by name..."/>
+      <label class="switch"><input type="checkbox" id="imagesOnlyToggle"/> Images only</label>
+    </div>
+    <div class="chip">Light</div>
+    <div class="grid-weapons" id="gridLight"></div>
+    <div class="chip">Medium</div>
+    <div class="grid-weapons" id="gridMedium"></div>
+    <div class="chip">Heavy</div>
+    <div class="grid-weapons" id="gridHeavy"></div>
+    <div style="text-align:right;margin-top:12px">
+      <button class="btn btn-danger" id="closeShopBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="settingsModal">
+  <div class="modal">
+    <h3>Settings</h3>
+    <div class="settings-grid">
+      <div class="card">
+        <h4>Rewards</h4>
+        <div class="kv">
+          <label class="muted">Kill reward</label><input id="inpKill" class="input" type="number" min="0"/>
+          <label class="muted">Team cashout reward</label><input id="inpTeamCashout" class="input" type="number" min="0"/>
+          <label class="muted">Round end reward</label><input id="inpRoundEnd" class="input" type="number" min="0"/>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Team colors</h4>
+        <div style="display:flex;gap:10px;align-items:center"><span class="muted" style="width:120px">Team A color</span><input id="colorA" type="color" value="#2563eb"/></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:6px"><span class="muted" style="width:120px">Team B color</span><input id="colorB" type="color" value="#ef4444"/></div>
+      </div>
+      <div class="card">
+        <h4>Players per team</h4>
+        <input id="playersPerTeam" class="input" type="number" min="1" max="12" value="5" />
+        <div class="muted" style="margin-top:6px">Applies to both teams. Reducing trims from the end.</div>
+      </div>
+      <div class="card">
+        <h4>Data</h4>
+        <div class="settings-actions" style="justify-content:flex-start">
+          <button id="saveToLocalBtn" class="btn btn-primary">Save</button>
+          <button id="downloadSettingsBtn" class="btn btn-success">Export JSON</button>
+          <button id="uploadSettingsBtn" class="btn btn-warning">Import JSON</button>
+          <input type="file" id="fileUpload" style="display:none"/>
+          <button id="resetDefaultsBtn" class="btn btn-danger">Reset to defaults</button>
+        </div>
+      </div>
+      <div class="card" style="grid-column:1/-1">
+        <h4>Weapon costs</h4>
+        <input id="wepFilter" class="input" placeholder="Filter weapons..." style="margin-bottom:8px"/>
+        <div class="weps-editor" id="wepsEditor"></div>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button id="closeSettingsBtn" class="btn">Close</button>
+      <button id="saveSettingsBtn" class="btn btn-primary">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======= Keys ======= */
+const KEY_SETTINGS="finals_settings_compact_v1";
+const KEY_STATE="finals_state_compact_v1";
+const KEY_THEME="finals_theme";
+const KEY_UI="finals_ui_prefs_compact_v1";
+const KEY_SLOTS="finals_slots_compact_v1";
+
+// Wipe any persisted match state on load
+try{ localStorage.removeItem(KEY_STATE); }catch(e){}
+
+
+/* ======= Weapons ======= */
+const WEAPONS={
+  light:[
+    {name:"93R",cost:450},{name:"ARN-220",cost:400},{name:"Dagger",cost:200},{name:"LH1",cost:300},{name:"M11",cost:350},
+    {name:"M26 Matter",cost:250},{name:"Recurve Bow",cost:300},{name:"SH1900",cost:350},{name:"SR-84",cost:300},
+    {name:"Sword",cost:200},{name:"Throwing Knives",cost:250},{name:"V9S",cost:150},{name:"XP-54",cost:250}
+  ],
+  medium:[
+    {name:"AKM",cost:300},{name:"CB-01 Repeater",cost:350},{name:"Cerberus 12GA",cost:250},{name:"CL-40",cost:400},
+    {name:"Dual Blades",cost:250},{name:"FAMAS",cost:450},{name:"FCAR",cost:400},{name:"Model 1887",cost:300},
+    {name:"P90",cost:400},{name:"Pike-556",cost:350},{name:"R.357",cost:200},{name:"Riot Shield",cost:250}
+  ],
+  heavy:[
+    {name:".50 Akimbo",cost:400},{name:"BFR Titan",cost:500},{name:"Flamethrower",cost:250},{name:"KS-23",cost:200},
+    {name:"Lewis Gun",cost:300},{name:"M134 Minigun",cost:350},{name:"M60",cost:350},{name:"MGL32",cost:150},
+    {name:"SA1216",cost:450},{name:"ShAK-50",cost:400},{name:"Sledgehammer",cost:200},{name:"Spear",cost:150}
+  ]
+};
+
+/* ======= Utils ======= */
+/* ======= Cloud Sync & Links ======= */
+const BASE_URL = "https://scooterbrewer.github.io/The-Finals-Scoreboard/";
+function syncAllPlayersToFirestore(){
+  if(!window.__fs) return;
+  try{
+    state.teams.forEach(team=>team.players.forEach(p=>{
+      window.__fs.setPlayer(p.name, {
+        cash: p.cash, currentWeapon: p.currentWeapon,
+        dead: !!p.dead, bench: !!p.bench, team: team.name
+      });
+    }));
+  }catch(e){ console.error("syncAllPlayersToFirestore failed", e); }
+}
+function copyPlayerLink(name){
+  const url = BASE_URL + "?player=" + encodeURIComponent(name);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>log("Copied link for " + name)).catch(()=>alert(url));
+  }else{ prompt("Copy link:", url); }
+}
+
+const sanitizeFile=(name)=>name.replace(/[^A-Za-z0-9]/g,'')+".png";
+const svgPlaceholder=(name)=>"data:image/svg+xml;utf8,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='320' height='160'><rect width='100%' height='100%' fill='#0b0b0b'/><text x='50%' y='50%' fill='#7c8a97' font-size='16' text-anchor='middle' alignment-baseline='middle'>${name}</text></svg>`);
+function log(msg){const host=document.getElementById('log'); if(!host) return; const div=document.createElement('div'); div.className='log-entry'; div.textContent=new Date().toLocaleTimeString()+": "+msg; host.prepend(div); const items=host.querySelectorAll('.log-entry'); if(items.length>50) items[items.length-1].remove();}
+
+/* ======= Settings & State ======= */
+let settings=JSON.parse(localStorage.getItem(KEY_SETTINGS)||"null")||{
+  killReward:100,teamCashoutReward:200,roundEndReward:200,
+  weaponCosts:(()=>{const m={};for(const k of Object.keys(WEAPONS)){WEAPONS[k].forEach(w=>m[w.name]=w.cost);}return m;})(),
+  teamColors:{A:"#2563eb",B:"#ef4444"},
+  playersPerTeam:5
+};
+let state={
+  teams:[
+    {name:"Team A",players:Array.from({length:settings.playersPerTeam},(_,i)=>({name:`Player ${i+1}`,cash:0,currentWeapon:"Starter",prevWeapon:null,dead:false,bench:false}))},
+    {name:"Team B",players:Array.from({length:settings.playersPerTeam},(_,i)=>({name:`Player ${i+1}`,cash:0,currentWeapon:"Starter",prevWeapon:null,dead:false,bench:false}))}
+  ]
+};
+const persist=()=>{ try{ localStorage.setItem(KEY_SETTINGS, JSON.stringify(settings)); }catch(e){}; syncAllPlayersToFirestore(); };
+
+/* ======= Theme ======= */
+const themeToggle=document.getElementById("themeToggle");
+const savedTheme=localStorage.getItem(KEY_THEME)||"dark";
+document.documentElement.setAttribute("data-theme",savedTheme);
+themeToggle.checked=(savedTheme==="light");
+themeToggle.onchange=()=>{const t=themeToggle.checked?"light":"dark";document.documentElement.setAttribute("data-theme",t);localStorage.setItem(KEY_THEME,t);};
+
+/* ======= Right panel toggles ======= */
+const uiPrefs=JSON.parse(localStorage.getItem(KEY_UI)||"{}");
+function setupToggle(btnId,panelId,label){
+  const btn=document.getElementById(btnId),panel=document.getElementById(panelId);
+  const show=!!uiPrefs[panelId]; panel.classList.toggle('hidden',!show);
+  btn.textContent=`${btn.textContent.split(' ')[0]} ${show?'Hide':'Show'} ${label}`;
+  btn.onclick=()=>{const visible=panel.classList.contains('hidden'); panel.classList.toggle('hidden',!visible); btn.textContent=`${btn.textContent.split(' ')[0]} ${visible?'Hide':'Show'} ${label}`; uiPrefs[panelId]=visible; localStorage.setItem(KEY_UI,JSON.stringify(uiPrefs));};
+}
+setupToggle("toggleTimer","timerPanel","Timer");
+setupToggle("toggleMass","massPanel","Mass Adjust");
+setupToggle("toggleLog","logPanel","Event Log");
+
+/* ======= Timer ======= */
+let timer=0,timerId=null;
+const clock=document.getElementById("timerClock");
+function updateClock(){const m=String(Math.floor(timer/60)).padStart(2,'0');const s=String(timer%60).padStart(2,'0');clock.textContent=`${m}:${s}`;}
+document.getElementById("timerStart").onclick=()=>{if(timerId) return; timerId=setInterval(()=>{timer++;updateClock();},1000);};
+document.getElementById("timerPause").onclick=()=>{clearInterval(timerId);timerId=null;};
+document.getElementById("timerReset").onclick=()=>{if(confirm("Reset timer?")){timer=0;updateClock();}};
+
+/* ======= Render ======= */
+const teamsArea=document.getElementById("teamsArea");
+function teamTotalCash(team){return team.players.reduce((a,p)=>a+p.cash,0);}
+
+function makePlayerCard(team,tIdx,p,pIdx){
+  const card=document.createElement('div'); card.className='player-card';
+
+  // Top: index + name
+  const top=document.createElement('div'); top.className='player-top';
+  const idx=document.createElement('div'); idx.className='player-index'; idx.textContent=`#${pIdx+1}`;
+  const name=document.createElement('div'); name.className='player-name'; name.textContent=p.name; name.title="Click to rename";
+  name.onclick=()=>{ const nm=prompt("Player name:",p.name); if(nm){ p.name=nm; persist(); render(); } };
+  top.appendChild(idx); top.appendChild(name);
+
+  // Weapon box
+  const wbox=document.createElement('div'); wbox.className='weapon-box';
+  const icon=document.createElement('img'); const sanitized=sanitizeFile(p.dead?"Starter":p.currentWeapon);
+  icon.src="images/"+sanitized; icon.onerror=()=>{icon.src=svgPlaceholder(p.currentWeapon);};
+  const wname=document.createElement('div'); wname.className='weapon-name'; wname.textContent=p.currentWeapon;
+  const badges=document.createElement('div'); badges.className='badges';
+  if(p.dead){ const b=document.createElement('span'); b.className='badge dead'; b.textContent='⚰ Dead'; badges.appendChild(b); }
+  if(p.bench){ const b=document.createElement('span'); b.className='badge bench'; b.textContent='BENCHED'; badges.appendChild(b); }
+  wbox.appendChild(icon); wbox.appendChild(wname); wbox.appendChild(badges);
+
+  // Cash
+  const cashbox=document.createElement('div'); cashbox.className='cash-box';
+  const cashVal=document.createElement('span'); cashVal.className='cash-value'; cashVal.textContent=`$${p.cash}`; cashVal.title="Click to edit cash";
+  cashVal.onclick=()=>{
+    const input=document.createElement('input'); input.type='number'; input.className='input'; input.value=p.cash; cashbox.replaceChild(input,cashVal); input.focus(); input.select();
+    const save=()=>{ const v=parseInt(input.value); if(!isNaN(v)){ p.cash=Math.max(0,v); persist(); render(); } else { cashbox.replaceChild(cashVal,input); } };
+    input.addEventListener('keydown',ev=>{ if(ev.key==='Enter') save(); if(ev.key==='Escape'){ cashbox.replaceChild(cashVal,input); } });
+    input.addEventListener('blur', save);
+  };
+  const qa=document.createElement('div'); qa.className='quick-adjust';
+  const plus100=document.createElement('button'); plus100.className='btn btn-success btn-compact'; plus100.textContent='+100'; plus100.onclick=()=>{ p.cash+=100; persist(); render(); };
+  const minus100=document.createElement('button'); minus100.className='btn btn-danger btn-compact'; minus100.textContent='-100'; minus100.onclick=()=>{ p.cash=Math.max(0,p.cash-100); persist(); render(); };
+  qa.appendChild(plus100); qa.appendChild(minus100);
+  cashbox.appendChild(cashVal); cashbox.appendChild(qa);
+
+  // Actions (compact)
+  const actions=document.createElement('div'); actions.className='actions';
+  const kill=document.createElement('button'); kill.className='btn btn-success btn-compact'; kill.textContent='Kill';
+  kill.onclick=()=>{ if(p.bench) return; p.cash+=settings.killReward; log(`${team.name}: ${p.name} Kill +${settings.killReward}`); persist(); render(); };
+  const buy=document.createElement('button'); buy.className='btn btn-primary btn-compact'; buy.textContent='Buy';
+  buy.onclick=()=>{ if(p.bench) return; openShop(tIdx,pIdx); };
+  const death=document.createElement('button'); death.className='btn btn-danger btn-compact'; death.textContent='Death'; death.disabled=p.dead;
+  death.onclick=()=>{ if(p.bench || p.dead) return; p.prevWeapon=p.currentWeapon; p.currentWeapon="Starter"; p.dead=true; log(`${team.name}: ${p.name} Died`); persist(); render(); };
+  const revive=document.createElement('button'); revive.className='btn btn-warning btn-compact'; revive.textContent='Revive'; revive.disabled=!p.dead;
+  revive.onclick=()=>{ if(p.bench || !p.dead) return; p.currentWeapon=p.prevWeapon||"Starter"; p.prevWeapon=null; p.dead=false; log(`${team.name}: ${p.name} Revived`); persist(); render(); };
+   [kill,buy,death,revive,copy].forEach(b=>actions.appendChild(b));
+
+  card.appendChild(top); card.appendChild(wbox); card.appendChild(cashbox); card.appendChild(actions);
+  return card;
+}
+
+function render(){
+  teamsArea.innerHTML='';
+  state.teams.forEach((team,tIdx)=>{
+    const tcard=document.createElement('div'); tcard.className='team-card'; tcard.style.setProperty('--teamcolor', tIdx===0?settings.teamColors.A:settings.teamColors.B);
+    const header=document.createElement('div'); header.className='team-header';
+    const h2=document.createElement('h2'); h2.textContent=team.name;
+    const headActions=document.createElement('div'); headActions.className='team-head-actions';
+    const rename=document.createElement('button'); rename.className='btn btn-compact'; rename.textContent='Rename'; rename.onclick=()=>{ const nm=prompt("Team name:",team.name); if(nm){ team.name=nm; persist(); render(); } };
+    const addP=document.createElement('button'); addP.className='btn btn-compact'; addP.textContent='+ Player'; addP.onclick=()=>{ team.players.push({name:`Player ${team.players.length+1}`,cash:0,currentWeapon:"Starter",prevWeapon:null,dead:false,bench:false}); persist(); render(); };
+    const remP=document.createElement('button'); remP.className='btn btn-danger btn-compact'; remP.textContent='- Player'; remP.onclick=()=>{ if(team.players.length>1){ team.players.pop(); persist(); render(); } };
+    const cashout=document.createElement('button'); cashout.className='btn btn-success btn-compact'; cashout.textContent=`Cashout +${settings.teamCashoutReward}`; cashout.onclick=()=>{ team.players.forEach(pl=>pl.cash+=settings.teamCashoutReward); log(`${team.name}: Team Cashout +${settings.teamCashoutReward}`); persist(); render(); };
+    headActions.appendChild(rename); headActions.appendChild(addP); headActions.appendChild(remP); headActions.appendChild(cashout);
+    header.appendChild(h2); header.appendChild(headActions);
+    tcard.appendChild(header);
+
+    const playersWrap=document.createElement('div'); playersWrap.className='team-players';
+    team.players.forEach((p,pIdx)=> playersWrap.appendChild(makePlayerCard(team,tIdx,p,pIdx)) );
+    tcard.appendChild(playersWrap);
+
+    const footer=document.createElement('div'); footer.className='team-footer';
+    footer.innerHTML=`<div class="total">Team Total: $${teamTotalCash(team)}</div>`;
+    tcard.appendChild(footer);
+
+    teamsArea.appendChild(tcard);
+  });
+
+  document.getElementById("endRoundBtn").textContent=`🏁 End Round (+${settings.roundEndReward})`;
+}
+
+/* ======= Shop ======= */
+const shopModal=document.getElementById("shopModal");
+let currentBuyer=null;
+const imagesOnlyToggle=document.getElementById("imagesOnlyToggle");
+const searchInput=document.getElementById("searchInput");
+imagesOnlyToggle.onchange=()=>renderShop();
+searchInput.oninput=()=>renderShop();
+document.getElementById("closeShopBtn").onclick=()=>{shopModal.style.display="none";currentBuyer=null;};
+
+function openShop(tIdx,pIdx){
+  currentBuyer={tIdx,pIdx};
+  document.getElementById("shopForPlayerInfo").innerText=`${state.teams[tIdx].players[pIdx].name} — Cash: $${state.teams[tIdx].players[pIdx].cash}`;
+  renderShop();
+  shopModal.style.display="flex";
+}
+function renderShop(){
+  const q=(searchInput.value||"").toLowerCase();
+  const grids={light:document.getElementById("gridLight"),medium:document.getElementById("gridMedium"),heavy:document.getElementById("gridHeavy")};
+  for(const cls of Object.keys(grids)){
+    const grid=grids[cls];grid.innerHTML="";
+    WEAPONS[cls].filter(w=>!q||w.name.toLowerCase().includes(q)).forEach(w=>grid.appendChild(buildCard(w)));
+  }
+}
+function buildCard(w){
+  const card=document.createElement("div");card.className="weapon-card";
+  const img=document.createElement("img");img.alt=w.name;img.src="images/"+sanitizeFile(w.name);img.onerror=()=>{img.src=svgPlaceholder(w.name);};
+  card.appendChild(img);
+  const showMeta=!imagesOnlyToggle.checked;
+  const nm=document.createElement("div");nm.className="weapon-name";nm.innerText=w.name;if(showMeta) card.appendChild(nm);
+  const price=settings.weaponCosts[w.name]??w.cost;
+  const cost=document.createElement("div");cost.className="weapon-cost";cost.innerText=`$${price}`;if(showMeta) card.appendChild(cost);
+  card.onclick=()=>{
+    if(!currentBuyer) return;
+    const {tIdx,pIdx}=currentBuyer;const player=state.teams[tIdx].players[pIdx];
+    if(player.cash>=price){player.cash-=price;player.prevWeapon=player.currentWeapon;player.currentWeapon=w.name;player.dead=false;log(`${state.teams[tIdx].name}: ${player.name} bought ${w.name} (-${price})`);persist();render();shopModal.style.display="none";currentBuyer=null;}
+    else alert("Not enough cash for "+w.name);
+  };
+  return card;
+}
+
+/* ======= Settings ======= */
+const settingsModal=document.getElementById("settingsModal");
+document.getElementById("openSettingsBtn").onclick=openSettings;
+document.getElementById("closeSettingsBtn").onclick=()=>settingsModal.style.display="none";
+document.getElementById("saveSettingsBtn").onclick=saveSettings;
+document.getElementById("saveToLocalBtn").onclick=()=>{persist();alert("Saved.");};
+document.getElementById("downloadSettingsBtn").onclick=downloadSettingsJSON;
+document.getElementById("uploadSettingsBtn").onclick=()=>document.getElementById("fileUpload").click();
+document.getElementById("fileUpload").onchange=handleSettingsUpload;
+document.getElementById("resetDefaultsBtn").onclick=resetDefaults;
+document.getElementById("wepFilter").oninput=()=>openSettings(); // live filter
+
+function openSettings(){
+  settingsModal.style.display="flex";
+  document.getElementById("inpKill").value=settings.killReward;
+  document.getElementById("inpTeamCashout").value=settings.teamCashoutReward;
+  document.getElementById("inpRoundEnd").value=settings.roundEndReward;
+  const colorA=document.getElementById("colorA"); const colorB=document.getElementById("colorB");
+  colorA.value=settings.teamColors.A; colorB.value=settings.teamColors.B;
+  colorA.oninput=()=>{ settings.teamColors.A=colorA.value; render(); };
+  colorB.oninput=()=>{ settings.teamColors.B=colorB.value; render(); };
+  document.getElementById("playersPerTeam").value=state.teams[0].players.length;
+
+  const host=document.getElementById("wepsEditor");host.innerHTML="";
+  const filter=(document.getElementById("wepFilter").value||"").toLowerCase();
+  for(const cls of Object.keys(WEAPONS)){
+    WEAPONS[cls].forEach(w=>{
+      if(filter && !w.name.toLowerCase().includes(filter)) return;
+      const row=document.createElement("div");row.className="wep-row";
+      const lbl=document.createElement("div");lbl.className="label";lbl.innerText=w.name;
+      const input=document.createElement("input");input.type="number";input.min="0";input.className="input";
+      input.value=settings.weaponCosts[w.name]??w.cost;
+      input.oninput=()=>{const v=parseInt(input.value);if(!isNaN(v)) settings.weaponCosts[w.name]=v;};
+      row.appendChild(lbl);row.appendChild(input);host.appendChild(row);
+    });
+  }
+}
+function applyPlayersPerTeam(n){
+  state.teams.forEach(team=>{
+    const cur=team.players.length;
+    if(n>cur){ for(let i=cur;i<n;i++){ team.players.push({name:`Player ${i+1}`,cash:0,currentWeapon:"Starter",prevWeapon:null,dead:false,bench:false}); } }
+    else if(n<cur){ team.players.splice(n); }
+  });
+}
+function saveSettings(){
+  const kr=parseInt(document.getElementById("inpKill").value); if(!isNaN(kr)) settings.killReward=kr;
+  const tcr=parseInt(document.getElementById("inpTeamCashout").value); if(!isNaN(tcr)) settings.teamCashoutReward=tcr;
+  const rer=parseInt(document.getElementById("inpRoundEnd").value); if(!isNaN(rer)) settings.roundEndReward=rer;
+  settings.teamColors.A=document.getElementById("colorA").value||settings.teamColors.A;
+  settings.teamColors.B=document.getElementById("colorB").value||settings.teamColors.B;
+  const ppt=parseInt(document.getElementById("playersPerTeam").value); if(!isNaN(ppt)&&ppt>0&&ppt<=12){ settings.playersPerTeam=ppt; applyPlayersPerTeam(ppt); }
+  persist(); settingsModal.style.display="none"; render();
+}
+function resetDefaults(){
+  if(!confirm("Reset all settings to defaults?")) return;
+  settings={
+    killReward:100,teamCashoutReward:200,roundEndReward:200,
+    weaponCosts:(()=>{const m={};for(const k of Object.keys(WEAPONS)){WEAPONS[k].forEach(w=>m[w.name]=w.cost);}return m;})(),
+    teamColors:{A:"#2563eb",B:"#ef4444"}, playersPerTeam:5
+  };
+  applyPlayersPerTeam(5);
+  persist(); openSettings();
+}
+function downloadSettingsJSON(){
+  const blob=new Blob([JSON.stringify(settings,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="finals_settings.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function handleSettingsUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=evt=>{ try{ const parsed=JSON.parse(evt.target.result);
+    if(parsed&&parsed.weaponCosts){ settings=Object.assign({killReward:100,teamCashoutReward:200,roundEndReward:200,weaponCosts:{},teamColors:{A:"#2563eb",B:"#ef4444"},playersPerTeam:5},parsed); applyPlayersPerTeam(settings.playersPerTeam); persist(); settingsModal.style.display="none"; render(); }
+    else alert("Invalid settings file.");
+  } catch(err){ alert("Parse error: "+err.message); } };
+  r.readAsText(f); e.target.value="";
+}
+
+/* ======= Global Actions ======= */
+document.getElementById("endRoundBtn").onclick=()=>{state.teams.forEach(team=>team.players.forEach(p=>p.cash+=settings.roundEndReward));log(`End Round: +${settings.roundEndReward} to all players`);persist();render();};
+document.getElementById("resetCashBtn").onclick=()=>{state.teams.forEach(team=>team.players.forEach(p=>p.cash=0));
+
+document.getElementById("clearWeaponsBtn").onclick=()=>{
+  state.teams.forEach(team=>team.players.forEach(p=>{p.currentWeapon="Starter";p.prevWeapon=null;}));
+  log("All weapons cleared to Starter");
+  persist();
+  render();
+};
+log("Reset Cash: all players set to $0");persist();render();};
+let undoSnap=null;
+document.getElementById("revertBtn").onclick=()=>{ if(!undoSnap){alert("Nothing to revert.");return;} state=JSON.parse(undoSnap); undoSnap=null; log("Reverted last state"); persist(); render(); };
+function takeUndo(){ undoSnap = JSON.stringify(state); } // reserved
+
+/* ======= Mass Adjust & Slots ======= */
+function massAdjust(filterFn,amount){state.teams.forEach((team,tIdx)=>team.players.forEach(p=>{if(filterFn(tIdx,p)) p.cash=Math.max(0,p.cash+amount);}));log(`Mass adjust ${amount>=0?'+':''}${amount} applied`);persist();render();}
+document.getElementById("addAllBtn").onclick=()=>massAdjust(()=>true,parseInt(document.getElementById("massAmount").value||'0'));
+document.getElementById("subAllBtn").onclick=()=>massAdjust(()=>true,-parseInt(document.getElementById("massAmount").value||'0'));
+document.getElementById("addTeamABtn").onclick=()=>massAdjust((t)=>t===0,parseInt(document.getElementById("massAmount").value||'0'));
+document.getElementById("subTeamABtn").onclick=()=>massAdjust((t)=>t===0,-parseInt(document.getElementById("massAmount").value||'0'));
+document.getElementById("addTeamBBtn").onclick=()=>massAdjust((t)=>t===1,parseInt(document.getElementById("massAmount").value||'0'));
+document.getElementById("subTeamBBtn").onclick=()=>massAdjust((t)=>t===1,-parseInt(document.getElementById("massAmount").value||'0'));
+document.getElementById("resetMatchBtn").onclick=()=>{if(!confirm("Reset the entire match to defaults?")) return; state={teams:[{name:"Team A",players:Array.from({length:settings.playersPerTeam},(_,i)=>({name:`Player ${i+1}`,cash:0,currentWeapon:"Starter",prevWeapon:null,dead:false,bench:false}))},{name:"Team B",players:Array.from({length:settings.playersPerTeam},(_,i)=>({name:`Player ${i+1}`,cash:0,currentWeapon:"Starter",prevWeapon:null,dead:false,bench:false}))}]};persist();render();log("Match reset to defaults");};
+
+function renderSlots(){
+  const slots=JSON.parse(localStorage.getItem(KEY_SLOTS)||"{}");
+  const host=document.getElementById("slotList"); host.innerHTML="";
+  Object.keys(slots).forEach(name=>{
+    const row=document.createElement("div"); row.className="log-entry"; row.style.display="flex"; row.style.justifyContent="space-between"; row.style.alignItems="center"; row.style.gap="6px";
+    const label=document.createElement("span"); label.textContent=name; row.appendChild(label);
+    const btns=document.createElement("span");
+    const load=document.createElement("button"); load.className="btn btn-compact"; load.textContent="Load"; load.onclick=()=>{ state=slots[name].state; settings=slots[name].settings; persist(); render(); openSettings(); log(`Loaded slot "${name}"`); };
+    const del=document.createElement("button"); del.className="btn btn-danger btn-compact"; del.textContent="Delete"; del.onclick=()=>{ delete slots[name]; localStorage.setItem(KEY_SLOTS,JSON.stringify(slots)); renderSlots(); log(`Deleted slot "${name}"`); };
+    btns.appendChild(load); btns.appendChild(del); row.appendChild(btns); host.appendChild(row);
+  });
+}
+document.getElementById("saveSlotBtn").onclick=()=>{
+  const name=document.getElementById("slotName").value.trim(); if(!name) return alert("Enter a slot name.");
+  const slots=JSON.parse(localStorage.getItem(KEY_SLOTS)||"{}"); slots[name]={state,settings}; localStorage.setItem(KEY_SLOTS,JSON.stringify(slots)); log(`Saved slot "${name}"`); renderSlots();
+};
+document.getElementById("exportJsonBtn").onclick=()=>{const blob=new Blob([JSON.stringify({state,settings},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="finals_match.json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);};
+document.getElementById("exportCsvBtn").onclick=()=>{let rows=[["Team","Player","Cash","Weapon","Dead","Bench"]];state.teams.forEach((team)=>team.players.forEach(p=>rows.push([team.name,p.name,p.cash,p.currentWeapon,p.dead,p.bench])));const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="finals_match.csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);};
+
+
+function init(){
+  const qp = new URLSearchParams(location.search);
+  const hudName = qp.get('player');
+
+  if(hudName){
+    document.body.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);padding:24px">
+        <div style="max-width:520px;width:100%;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.25)">
+          <div style="font-size:18px;color:var(--muted);margin-bottom:6px">Player</div>
+          <div id="hudName" style="font-size:28px;font-weight:800;margin-bottom:10px;word-break:break-word"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 12px">
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px">
+              <div style="font-size:12px;color:var(--muted)">Cash</div>
+              <div id="hudCash" style="font-size:26px;font-weight:900">$0</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px">
+              <div style="font-size:12px;color:var(--muted)">Weapon</div>
+              <div id="hudWeapon" style="font-size:20px;font-weight:800">Starter</div>
+            </div>
+          </div>
+          <div id="hudFlags" style="margin-top:4px"></div>
+          <div style="margin-top:12px;font-size:12px;color:var(--muted)">Live view</div>
+        </div>
+      </div>`;
+    const nameEl=document.getElementById('hudName');
+    const cashEl=document.getElementById('hudCash');
+    const wepEl=document.getElementById('hudWeapon');
+    const flagsEl=document.getElementById('hudFlags');
+    nameEl.textContent=hudName;
+
+    const updateHUD=(p)=>{
+      if(!p){ cashEl.textContent='$0'; wepEl.textContent='Starter'; flagsEl.innerHTML='<div style="color:var(--muted)">Waiting for data…</div>'; return; }
+      cashEl.textContent = '$' + (p.cash ?? 0);
+      wepEl.textContent = p.currentWeapon ?? 'Starter';
+      const flags=[];
+      if(p.dead) flags.push("<span style='background:var(--danger);color:#fff;padding:6px 10px;border-radius:10px;font-weight:700'>⚰ Dead</span>");
+      if(p.bench) flags.push("<span style='background:#6b7280;color:#fff;padding:6px 10px;border-radius:10px;font-weight:700'>BENCHED</span>");
+      flagsEl.innerHTML = flags.join(' ');
+    };
+
+    if(window.__fs){
+      window.__fs.subscribe(hudName, (data)=> updateHUD(data));
+    } else {
+      updateHUD(null);
+    }
+    return;
+  }
+
+  render(); updateClock(); renderSlots(); syncAllPlayersToFirestore();
+}
+
+init();
+</script>
+</body>
+</html>
